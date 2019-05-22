@@ -1,0 +1,44 @@
+<!doctype html>
+<html>
+<head>
+	<meta charset="utf-8"/>
+	<meta name="viewport" content="width=device-width, initial-scale=1"/>
+	<title>quiztech web component</title>
+	<link rel="stylesheet" href="source/style.css"/>
+	<link rel="stylesheet" href="source/demo.css"/>
+</head>
+<body>
+	<header>quiztech</header>
+	<main>
+		<h1>give it a shot</h1>
+
+		<qzt-quiz registers="cool,uncool">
+			<div slot="questions">
+				<qzt-question>
+					<p slot="question">How happy are you?</p>
+					<qzt-choice add="uncool:1">Unhappy</qzt-choice>
+					<qzt-choice>Apathetic</qzt-choice>
+					<qzt-choice add="cool:1">Happy</qzt-choice>
+				</qzt-question>
+				<qzt-question>
+					<p slot="question">How ugly are you?</p>
+					<qzt-choice add="cool:1">Attractive</qzt-choice>
+					<qzt-choice add="uncool:1">Unattractive</qzt-choice>
+				</qzt-question>
+			</div>
+			<div slot="results">
+				<qzt-result register="cool">
+					You are a cool person!
+				</qzt-result>
+				<qzt-result register="uncool">
+					You are NOT a cool person!
+				</qzt-result>
+			</div>
+		</qzt-quiz>
+	</main>
+
+	<script type="importmap-shim" src="dist-demo/importmap.json"></script>
+	<script type="module-shim" src="dist/demo.js"></script>
+	<script src="https://unpkg.com/es-module-shims@0.2.3/dist/es-module-shims.js"></script>
+</body>
+</html>

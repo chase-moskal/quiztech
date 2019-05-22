@@ -1,0 +1,17 @@
+
+@charset "utf-8";
+
+* {
+	margin: 0;
+	padding: 0;
+	box-sizing: border-box;
+	--focus-outline: 3px solid #2ef;
+}
+
+*:focus {
+	outline: var(--focus-outline);
+}
+
+html {
+	font-size: 20px;
+}
