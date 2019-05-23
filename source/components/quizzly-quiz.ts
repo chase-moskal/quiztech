@@ -1,5 +1,5 @@
 
-import {Component, html, svg, prop} from "../toolbox/component"
+import {Component, html, prop} from "../toolbox/component"
 
 const _state = Symbol("_state")
 const _renderStage = Symbol("_renderStage")
@@ -10,7 +10,7 @@ const _renderQuestionStage = Symbol("_renderQuestionStage")
 
 type QuizState = "intro" | "question" | "result"
 
-export class QztQuiz extends Component {
+export class QuizzlyQuiz extends Component {
 	@prop(String) title: string = "Quiz"
 
 	@prop(String) private [_state]: string = "intro"

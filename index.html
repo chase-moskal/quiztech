@@ -3,38 +3,45 @@
 <head>
 	<meta charset="utf-8"/>
 	<meta name="viewport" content="width=device-width, initial-scale=1"/>
-	<title>quiztech web component</title>
+	<title>quizzly web component</title>
 	<link rel="stylesheet" href="source/style.css"/>
 	<link rel="stylesheet" href="source/demo.css"/>
 </head>
 <body>
-	<header>quiztech</header>
+	<header>quizzly</header>
 	<main>
 		<h1>give it a shot</h1>
 
-		<qzt-quiz registers="cool,uncool">
+		<quizzly-quiz dimensions="coolness">
 			<div slot="questions">
-				<qzt-question>
+				<quizzly-question>
 					<p slot="question">How happy are you?</p>
-					<qzt-choice add="uncool:1">Unhappy</qzt-choice>
-					<qzt-choice>Apathetic</qzt-choice>
-					<qzt-choice add="cool:1">Happy</qzt-choice>
-				</qzt-question>
-				<qzt-question>
+					<quizzly-choice add="coolness:-1">Unhappy</quizzly-choice>
+					<quizzly-choice>Apathetic</quizzly-choice>
+					<quizzly-choice add="coolness:1">Happy</quizzly-choice>
+				</quizzly-question>
+				<quizzly-question>
 					<p slot="question">How ugly are you?</p>
-					<qzt-choice add="cool:1">Attractive</qzt-choice>
-					<qzt-choice add="uncool:1">Unattractive</qzt-choice>
-				</qzt-question>
+					<quizzly-choice add="coolness:1">Attractive</quizzly-choice>
+					<quizzly-choice add="coolness:-1">Unattractive</quizzly-choice>
+				</quizzly-question>
 			</div>
 			<div slot="results">
-				<qzt-result register="cool">
-					You are a cool person!
-				</qzt-result>
-				<qzt-result register="uncool">
-					You are NOT a cool person!
-				</qzt-result>
+				<p label="cool">You are a cool person!</p>
+				<p label="uncool">You are NOT a cool person!</p>
 			</div>
-		</qzt-quiz>
+		</quizzly-quiz>
+
+		<script>
+			const quiz = document.querySelector("quizzly-quiz")
+
+			// evaluate the numerical dimensions and return the result label
+			quiz.evaluator = dimensions => (
+				dimensions.coolness > 0
+					? "cool"
+					: "uncool"
+			)
+		</script>
 	</main>
 
 	<script type="importmap-shim" src="dist-demo/importmap.json"></script>
