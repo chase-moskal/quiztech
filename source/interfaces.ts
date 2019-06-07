@@ -1,4 +1,4 @@
 
-export interface QuizInfo {
-	data: any
+export interface Dimensions {
+	[dimension: string]: number
 }

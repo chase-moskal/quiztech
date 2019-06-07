@@ -8,35 +8,70 @@
 	<link rel="stylesheet" href="source/demo.css"/>
 </head>
 <body>
-	<header>quizzly</header>
 	<main>
-		<h1>give it a shot</h1>
 
-		<quizzly-quiz dimensions="coolness">
-			<div slot="questions">
-				<quizzly-question>
-					<p slot="question">How happy are you?</p>
-					<quizzly-choice add="coolness:-1">Unhappy</quizzly-choice>
-					<quizzly-choice>Apathetic</quizzly-choice>
-					<quizzly-choice add="coolness:1">Happy</quizzly-choice>
-				</quizzly-question>
-				<quizzly-question>
-					<p slot="question">How ugly are you?</p>
-					<quizzly-choice add="coolness:1">Attractive</quizzly-choice>
-					<quizzly-choice add="coolness:-1">Unattractive</quizzly-choice>
-				</quizzly-question>
+		<quizzly-quiz id="coolness-quiz" dimensions="coolness">
+			<div>
+				<h2>Coolness Quiz</h2>
+				<p>How cool R U?</p>
 			</div>
-			<div slot="results">
-				<p label="cool">You are a cool person!</p>
-				<p label="uncool">You are NOT a cool person!</p>
+			<quizzly-question>
+				<p slot="text">How happy are you?</p>
+				<quizzly-choice add="coolness:-1">Unhappy</quizzly-choice>
+				<quizzly-choice>Apathetic</quizzly-choice>
+				<quizzly-choice add="coolness:1">Happy</quizzly-choice>
+			</quizzly-question>
+			<quizzly-question>
+				<p slot="text">How ugly are you?</p>
+				<quizzly-choice add="coolness:1">Attractive</quizzly-choice>
+				<quizzly-choice add="coolness:-1">Unattractive</quizzly-choice>
+			</quizzly-question>
+			<quizzly-result>
+				<p>results will show when you complete the quiz..</p>
+			</quizzly-result>
+			<quizzly-result label="cool">
+				<p>You are a cool person!</p>
+			</quizzly-result>
+			<quizzly-result label="uncool">
+				<p>You are NOT a cool person!</p>
+			</quizzly-result>
+		</quizzly-quiz>
+
+		<quizzly-quiz id="personality-quiz" dimensions="calm,cool,collected">
+			<div>
+				<h2>Personality Type Quiz</h2>
 			</div>
+			<quizzly-question>
+				<p slot="text">Which best describes you now?</p>
+				<quizzly-choice add="calm:-1,cool:-1">Hot and tempered</quizzly-choice>
+				<quizzly-choice add="cool:1,collected:1">Cold and organized</quizzly-choice>
+				<quizzly-choice add="collected:-1">Confused</quizzly-choice>
+			</quizzly-question>
+			<quizzly-question>
+				<p slot="text">What emotion best describes you?</p>
+				<quizzly-choice add="calm:-1,cool:1,collected:1">Badman</quizzly-choice>
+				<quizzly-choice add="calm:-1,cool:-1,collected:0">Sadman</quizzly-choice>
+				<quizzly-choice add="calm:2,cool:-1,collected:-1">Farting</quizzly-choice>
+			</quizzly-question>
+			<!-- <quizzly-result>
+				<p>results will show when you complete the quiz..</p>
+			</quizzly-result> -->
+			<quizzly-result label="calm">
+				<p>you're a <strong>calm</strong> person</p>
+			</quizzly-result>
+			<quizzly-result label="cool">
+				<p>you're a <strong>cool</strong> person</p>
+			</quizzly-result>
+			<quizzly-result label="collected">
+				<p>you're a <strong>collected</strong> person</p>
+			</quizzly-result>
 		</quizzly-quiz>
 
 		<script>
-			const quiz = document.querySelector("quizzly-quiz")
+			const coolnessQuiz = document.querySelector("#coolness-quiz")
 
 			// evaluate the numerical dimensions and return the result label
-			quiz.evaluator = dimensions => (
+			coolnessQuiz.evaluator = dimensions => (
 				dimensions.coolness > 0
 					? "cool"
 					: "uncool"
