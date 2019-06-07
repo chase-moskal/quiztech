@@ -16,4 +16,4 @@ const quizzes: QuizzlyQuiz[] = Array.from(document.querySelectorAll("quizzly-qui
 for (const quiz of quizzes)
 	quiz.done
 		.catch(error => console.error(error))
-		.then(event => console.log("QUIZDONE", event.detail))
+		.then(detail => console.log("QUIZDONE", detail))

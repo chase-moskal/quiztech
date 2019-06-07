@@ -22,18 +22,6 @@ const parseAddCommand = (raw: string) => {
 	})
 }
 
-const _reset = Symbol("_reset")
-const _events = Symbol("_events")
-const _submit = Symbol("_submit")
-const _result = Symbol("_result")
-const _tabulate = Symbol("_tabulate")
-const _tabulation = Symbol("_tabulation")
-const _applyFrozen = Symbol("_applyFrozen")
-const _applyResultLabel = Symbol("_applyResultLabel")
-const _getResultElements = Symbol("_getResultElements")
-const _getQuestionElements = Symbol("_getQuestionElements")
-const _donePromiseInternals = Symbol("_donePromiseInternals")
-
 export const defaultEvaluator = (dimensions: Dimensions): string => {
 	let best: string = null
 	let bestValue: number = -Infinity
@@ -47,76 +35,178 @@ export const defaultEvaluator = (dimensions: Dimensions): string => {
 	return best
 }
 
-const createCustomEvent = (eventName: string, detail: any = {}) => {
-	return new CustomEvent(eventName, {
-		detail,
-		bubbles: true,
-		composed: true
-	})
+export interface QuizResultDetail {
+	result: string
+	tabulation: Dimensions
+}
+
+const eventSettings = {bubbles: true, composed: true}
+
+export class StartEvent extends CustomEvent<{}> {
+	constructor(detail: {} = {}) {
+		super("quiz-start", {...eventSettings, detail})
+	}
+}
+
+export class DoneEvent extends CustomEvent<QuizResultDetail> {
+	constructor(detail: QuizResultDetail) {
+		super("quiz-done", {...eventSettings, detail})
+	}
+}
+
+export class ErrorEvent extends CustomEvent<{error: Error}> {
+	constructor(error: Error) {
+		super("quiz-error", {...eventSettings, detail: {error}})
+	}
 }
 
 export type Evaluator = (dimensions: Dimensions) => string
-export type OnStart = (event: Event) => void
-export type OnChoice = (event: Event) => void
-export type OnError = (event: Event) => void
-export type OnDone = (event: Event) => void
+
+export type QuizState = "interactive" | "loading" | "done" | "error"
+
+/*
+
+Actions
+
+	SUBMIT
+		interactive → loading → done
+		interactive → loading → error
+
+	RESET
+		done → interactive
+		error → interactive
+
+*/
+
+const _state = Symbol("_state")
+const _events = Symbol("_events")
+const _result = Symbol("_result")
+const _complete = Symbol("_complete")
+const _tabulate = Symbol("_tabulate")
+const _resetAction = Symbol("_resetAction")
+const _submitAction = Symbol("_submitAction")
+const _renderMainSlot = Symbol("_renderMainSlot")
+const _renderButtonBar = Symbol("_renderButtonBar")
+const _makeDonePromise = Symbol("_makeDonePromise")
+const _setSlottedStates = Symbol("_setSlottedStates")
+const _handleChoiceCheck = Symbol("_handleChoiceCheck")
+const _getResultElements = Symbol("_getResultElements")
+const _getQuestionElements = Symbol("_getQuestionElements")
+const _donePromiseInternals = Symbol("_donePromiseInternals")
 
 export class QuizzlyQuiz extends Component {
 	@prop(String) dimensions: string = ""
-	@prop(Boolean, true) frozen: boolean = false
-	@prop(Boolean, true) loading: boolean = false
-	@prop(Boolean, true) completed: boolean = false
 	@prop(Function) evaluator: Evaluator = defaultEvaluator
 
-	@prop(Function) onStart: OnStart = () => {}
-	@prop(Function) onError: OnError = () => {}
-	@prop(Function) onDone: OnDone = () => {}
+	@prop(Function) onStart = () => {}
+	@prop(Function) onError = (error: Error) => {}
+	@prop(Function) onDone = (detail: QuizResultDetail) => {}
+	
+	done: Promise<QuizResultDetail> = this[_makeDonePromise]()
 
-	private readonly [_events] = {
-		start: () => {
-			this.loading = false
-			const event = createCustomEvent("quiz-start")
-			this.onStart(event)
-			this.dispatchEvent(event)
-		},
-		error: (error: Error) => {
-			this.loading = false
-			const event = createCustomEvent("quiz-error", {error})
-			this.onError(event)
-			this.dispatchEvent(event)
-			this[_donePromiseInternals].reject(error)
-		},
-		done: () => {
-			this.loading = false
-			const {tabulation, result} = this
-			const event = createCustomEvent("quiz-done", {tabulation, result})
-			this.onDone(event)
-			this.dispatchEvent(event)
-			this[_donePromiseInternals].resolve(event)
-		}
-	}
-
-	readonly done: Promise<any> = new Promise((resolve, reject) => {
-		this[_donePromiseInternals] = {resolve, reject}
-	})
-
-	private [_tabulation]: Dimensions = null
-	get tabulation() { return this[_tabulation] }
-
-	private [_result]: string
-	get result() { return this[_result] }
+	@prop(String) private [_result] = ""
+	@prop(Boolean) private [_complete]: boolean = false
+	@prop(String) private [_state]: QuizState = "interactive"
 
 	updated() {
-		this[_tabulate]()
-		this[_applyFrozen]()
+		this[_setSlottedStates]()
+
+		const questions = this[_getQuestionElements]()
+		const answers = questions
+			.map(question => question.getCurrentChoice())
+			.filter(choice => !!choice)
+		this[_complete] = answers.length === questions.length
 	}
 
 	firstUpdated() {
-		this[_reset]()
+		this[_resetAction]()
 	}
 
-	private readonly [_tabulate] = () => {
-		const dimensions = parseDimensions(this.dimensions)
+	private [_makeDonePromise]() {
+		return new Promise<QuizResultDetail>((resolve, reject) => {
+			this[_donePromiseInternals] = {resolve, reject}
+		})
+	}
+
+	private readonly [_events] = {
+		start: () => {
+			this[_state] = "interactive"
+			const event = new StartEvent()
+			this.onStart()
+			this.dispatchEvent(event)
+		},
+		error: (error: Error) => {
+			this[_state] = "error"
+			const event = new ErrorEvent(error)
+			this.onError(error)
+			this.dispatchEvent(event)
+			this[_donePromiseInternals].reject(error)
+		},
+		done: (detail: QuizResultDetail) => {
+			this[_state] = "done"
+			const event = new DoneEvent(detail)
+			this.onDone(event.detail)
+			this.dispatchEvent(event)
+			this[_donePromiseInternals].resolve(event.detail)
+		}
+	}
+
+	private readonly [_submitAction] = async() => {
+		this[_state] = "loading"
+		const detail = this[_tabulate]()
+		await sleep(500)
+		this[_events].done(detail)
+	}
+
+	private readonly [_resetAction] = () => {
+		for (const questions of this[_getQuestionElements]())
+			questions.reset()
+		this[_events].start()
+		this.requestUpdate()
+	}
+
+	private [_getQuestionElements](): QuizzlyQuestion[] {
+		const slot: HTMLSlotElement = this.shadowRoot.querySelector("#main-slot")
+		if (!slot) return []
+		const questions = <QuizzlyQuestion[]>slot.assignedElements()
+			.filter(element => element.tagName.toLowerCase().includes("question"))
+		return questions
+	}
+
+	private [_getResultElements](): QuizzlyResult[] {
+		const slot: HTMLSlotElement = this.shadowRoot.querySelector("#main-slot")
+		if (!slot) return []
+		const results = <QuizzlyResult[]>slot.assignedElements()
+			.filter(element => element.tagName.toLowerCase().includes("result"))
+		return results
+	}
+
+	private [_renderButtonBar]({submit, reset}: {submit: boolean; reset: boolean}) {
+		return html`
+			<div id="buttonbar">
+				${submit
+					? html`
+						<button
+							id="submit-button"
+							@click=${this[_submitAction]}
+							?disabled=${!this[_complete]}>
+								Submit Quiz for Results
+						</button>
+					`
+					: null}
+				${reset
+					? html`
+						<button id="reset-button" @click=${this[_resetAction]}>
+							RESET
+						</button>
+					`
+					: null}
+			</div>
+		`
+	}
+
+	private [_tabulate](): QuizResultDetail {
+		const tabulation = parseDimensions(this.dimensions)
 		const questions = this[_getQuestionElements]()
 		let answered = 0
 
@@ -126,109 +216,76 @@ export class QuizzlyQuiz extends Component {
 				if (choice.add) {
 					const additions = parseAddCommand(choice.add)
 					for (const {dimension, value} of additions) {
-						if (!dimensions.hasOwnProperty(dimension))
+						if (!tabulation.hasOwnProperty(dimension))
 							throw new Error(`can't add to unknown dimension "${dimension}"`)
-						dimensions[dimension] += value
+						tabulation[dimension] += value
 					}
 				}
 				answered += 1
 			}
 		}
 
-		Object.freeze(dimensions)
-		this[_tabulation] = dimensions
-		this.completed = answered === questions.length
-		this[_result] = this.evaluator(dimensions)
+		const result = this.evaluator(tabulation)
+		this[_result] = result
+		Object.freeze(tabulation)
+
+		return {tabulation, result}
 	}
 
-	private [_applyFrozen]() {
-		for (const question of this[_getQuestionElements]())
-			question.disabled = this.frozen
-	}
+	private [_setSlottedStates]() {
+		const questions = this[_getQuestionElements]()
+		const results = this[_getResultElements]()
 
-	private readonly [_submit] = async() => {
-		this.frozen = true
-		this[_applyResultLabel]()
-		this.loading = true
-		console.log("sleepyweepy")
-		await sleep(2000)
-		console.log("22")
-		this[_events].done()
-	}
-
-	private readonly [_reset] = () => {
-		this[_result] = ""
-		this.frozen = false
-		for (const question of this[_getQuestionElements]())
-			question.reset()
-		this.requestUpdate()
-		this[_applyResultLabel]()
-		this[_events].start()
-	}
-
-	private [_getQuestionElements](): QuizzlyQuestion[] {
-		const slot: HTMLSlotElement = this.shadowRoot.querySelector("slot")
-		if (!slot) return []
-		const questions = <QuizzlyQuestion[]>slot.assignedElements()
-			.filter(element => element.tagName.toLowerCase().includes("question"))
-		return questions
-	}
-
-	private [_getResultElements](): QuizzlyResult[] {
-		const slot: HTMLSlotElement = this.shadowRoot.querySelector("slot")
-		if (!slot) return []
-		const results = <QuizzlyResult[]>slot.assignedElements()
-			.filter(element => element.tagName.toLowerCase().includes("result"))
-		return results
-	}
-
-	private [_applyResultLabel]() {
-		const label = this[_result]
-		const resultElements = this[_getResultElements]()
-		for (const result of resultElements) {
-			if (this.completed) {
-				result.hidden = result.label.toLowerCase() !== label.toLowerCase()
-				if (!result.label && !label) result.hidden = false
-			}
-			else {
-				result.hidden = true
-				if (!result.label) result.hidden = false
-			}
+		switch (this[_state]) {
+			case "interactive":
+				for (const element of results) element.hidden = true
+				for (const element of questions) element.hidden = false
+				break
+			case "loading":
+				for (const element of results) element.hidden = true
+				for (const element of questions) element.hidden = true
+				break
+			case "done":
+				for (const element of results) {
+					console.log(element.label, this[_result])
+					element.hidden = element.label === this[_result]
+						? false
+						: true
+				}
+				for (const element of questions) element.hidden = true
+				break
+			case "error":
+				for (const element of results) element.hidden = true
+				for (const element of questions) element.hidden = true
+				break
 		}
 	}
 
+	private readonly [_handleChoiceCheck] = () => {
+		this.requestUpdate()
+	}
+
+	private [_renderMainSlot]() {
+		return html`<slot id="main-slot" @check=${this[_handleChoiceCheck]}></slot>`
+	}
+
 	render() {
-		return this.loading ? html`
-
-			<!-- LOADING STATE -->
-			<div id="loading">
-				loading
-			</div>
-
-		` : html`
-
-			<!-- LOADED -->
-			<slot @check=${this[_tabulate]}></slot>
-			<div id="buttonbar">
-				${this.frozen
-					? null
-					: html`
-						<button
-							id="submit-button"
-							@click=${this[_submit]}
-							?disabled=${!this.completed}
-							>
-								Submit Quiz for Results
-						</button>
-					`
-				}
-				<button
-					id="reset-button"
-					@click=${this[_reset]}
-					>
-						RESET
-				</button>
-			</div>
-		`
+		switch (this[_state]) {
+			case "interactive": return html`
+				${this[_renderMainSlot]()}
+				${this[_renderButtonBar]({submit: true, reset: true})}
+			`
+			case "loading": return html`
+				<div>loading, bruv!</div>
+			`
+			case "done": return html`
+				${this[_renderMainSlot]()}
+				${this[_renderButtonBar]({submit: false, reset: true})}
+			`
+			case "error": return html`
+				<div>le error!!</div>
+				${this[_renderButtonBar]({submit: false, reset: true})}
+			`
+		}
 	}
 }
