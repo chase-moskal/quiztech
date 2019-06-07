@@ -6,6 +6,7 @@ const _getChoices = Symbol("_getChoices")
 const _handleCheckEvent = Symbol("_handleCheckEvent")
 
 export class QuizzlyQuestion extends Component {
+	@prop(Boolean, true) disabled: boolean = false
 
 	static get styles() {
 		return css``
@@ -23,14 +24,23 @@ export class QuizzlyQuestion extends Component {
 		return choices
 	}
 
+	updated() {
+		for (const choice of this[_getChoices]())
+			choice.disabled = this.disabled
+	}
+
 	check(choice: HTMLElement) {
-		const choices = this[_getChoices]()
-		for (const node of choices) node.checked = node === choice
+		for (const node of this[_getChoices]())
+			node.checked = node === choice
 	}
 
 	getCurrentChoice() {
-		const choices = this[_getChoices]()
-		return choices.find(choice => choice.checked)
+		return this[_getChoices]().find(choice => choice.checked)
+	}
+
+	reset() {
+		for (const choice of this[_getChoices]())
+			choice.reset()
 	}
 
 	render() {

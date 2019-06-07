@@ -6,6 +6,7 @@ const _dispatchCheckEvent = Symbol("_dispatchCheckEvent")
 export class QuizzlyChoice extends Component {
 	@prop(String) add: string
 	@prop(Boolean) checked: boolean = false
+	@prop(Boolean, true) disabled: boolean = false
 
 	static get styles() {
 		return css`
@@ -30,6 +31,11 @@ export class QuizzlyChoice extends Component {
 		`
 	}
 
+	reset() {
+		this.checked = false
+		this.disabled = false
+	}
+
 	private readonly [_dispatchCheckEvent] = () => {
 		this.dispatchEvent(new CustomEvent("check", {
 			detail: {},
@@ -40,7 +46,7 @@ export class QuizzlyChoice extends Component {
 
 	render() {
 		return html`
-			<button @click=${this[_dispatchCheckEvent]}>
+			<button @click=${this[_dispatchCheckEvent]} ?disabled=${this.disabled}>
 				<div class="icon">
 					${this.checked ? "X" : "-"}
 				</div>
