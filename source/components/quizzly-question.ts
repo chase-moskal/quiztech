@@ -2,8 +2,8 @@
 import {QuizzlyChoice} from "./quizzly-choice.js"
 import {Component, html, css, prop} from "../toolbox/component.js"
 
-const _getChoices = Symbol("_getChoices")
-const _handleCheckEvent = Symbol("_handleCheckEvent")
+export const _getChoices = Symbol()
+export const _handleCheckEvent = Symbol()
 
 export class QuizzlyQuestion extends Component {
 	@prop(Boolean, true) disabled: boolean = false

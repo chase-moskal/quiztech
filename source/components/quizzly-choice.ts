@@ -1,7 +1,7 @@
 
 import {Component, html, css, prop} from "../toolbox/component.js"
 
-const _dispatchCheckEvent = Symbol("_dispatchCheckEvent")
+export const _dispatchCheckEvent = Symbol()
 
 export class QuizzlyChoice extends Component {
 	@prop(String) add: string

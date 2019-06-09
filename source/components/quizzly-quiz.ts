@@ -16,15 +16,15 @@ import {QuizzlyResult} from "./quizzly-result.js"
 import {QuizzlyQuestion} from "./quizzly-question.js"
 import {Component, html, prop} from "../toolbox/component.js"
 
-const _state = Symbol()
-const _actions = Symbol()
-const _tabulate = Symbol()
-const _resultLabel = Symbol()
-const _questionIndex = Symbol()
-const _renderActionBar = Symbol()
-const _handleChoiceCheck = Symbol()
-const _getSlottedElements = Symbol()
-const _donePromiseInternals = Symbol()
+export const _state = Symbol()
+export const _actions = Symbol()
+export const _tabulate = Symbol()
+export const _resultLabel = Symbol()
+export const _questionIndex = Symbol()
+export const _renderActionBar = Symbol()
+export const _handleChoiceCheck = Symbol()
+export const _getSlottedElements = Symbol()
+export const _donePromiseInternals = Symbol()
 
 export class QuizzlyQuiz extends Component {
 	@prop(String) dimensions: string = ""
