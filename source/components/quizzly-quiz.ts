@@ -8,30 +8,13 @@ import {parseAddCommand} from "../quiztools/parse-add-command.js"
 import {defaultEvaluator} from "../quiztools/default-evaluator.js"
 import {defaultSubmitter} from "../quiztools/default-submitter.js"
 
-// import {QuizDoneEvent} from "../events/quiz-done-event.js"
-// import {QuizStartEvent} from "../events/quiz-start-event.js"
-// import {QuizErrorEvent} from "../events/quiz-error-event.js"
+import {QuizDoneEvent} from "../events/quiz-done-event.js"
+import {QuizStartEvent} from "../events/quiz-start-event.js"
+import {QuizErrorEvent} from "../events/quiz-error-event.js"
 
 import {QuizzlyResult} from "./quizzly-result.js"
 import {QuizzlyQuestion} from "./quizzly-question.js"
 import {Component, html, prop} from "../toolbox/component.js"
-
-/*
-
-QUIZZLY-QUIZ
-- slots the intro, questions, and results
-- can be in "question", "loading", "result", or "error" state
-	- in question mode, display the next unanswered question
-	- in loading mode, show loading spinner
-	- in result mode, show the relevant result
-	- in error mode, say there's an error
-- renders an action bar, based on the current state
-- provides quiz-start quiz-done and quiz-error events
-- accepts an evaluator function
-- accepts a submitter function
-- updates whenever choice is checked
-
-*/
 
 const _state = Symbol()
 const _actions = Symbol()
@@ -41,18 +24,26 @@ const _questionIndex = Symbol()
 const _renderActionBar = Symbol()
 const _handleChoiceCheck = Symbol()
 const _getSlottedElements = Symbol()
+const _donePromiseInternals = Symbol()
 
-/**
- * # QUIZZLY QUIZ
- */
 export class QuizzlyQuiz extends Component {
 	@prop(String) dimensions: string = ""
+	@prop(Boolean, true) once: boolean = false
 	@prop(Function) evaluator: Evaluator = defaultEvaluator
 	@prop(Function) submitter: Submitter = defaultSubmitter
 
-	private [_state]: string = "question"
-	private [_questionIndex]: number = 0
-	private [_resultLabel]: string = ""
+	@prop(Function) onQuizStart = () => {}
+	@prop(Function) onQuizDone = (tabulation: Tabulation) => {}
+	@prop(Function) onQuizError = (error: Error) => {}
+
+	@prop(String) private [_state]: string = "question"
+	@prop(Number) private [_questionIndex]: number = 0
+	@prop(String) private [_resultLabel]: string = ""
+
+	private [_donePromiseInternals]: {resolve: any; reject: any}
+	done = new Promise((resolve, reject) => {
+		this[_donePromiseInternals] = {resolve, reject}
+	})
 
 	updated() {
 		const {questions, results} = this[_getSlottedElements]()
@@ -81,6 +72,12 @@ export class QuizzlyQuiz extends Component {
 	render() {
 		return html`
 			<slot id="main-slot" @check=${this[_handleChoiceCheck]}></slot>
+			${this[_state] === "loading"
+				? html`<div class="loading">...loading...</div>`
+				: null}
+			${this[_state] === "error"
+				? html`<div class="error">ERROR</div>`
+				: null}
 			${this[_renderActionBar]()}
 		`
 	}
@@ -115,11 +112,17 @@ export class QuizzlyQuiz extends Component {
 				const response = await this.submitter(tabulation)
 				this[_resultLabel] = tabulation.resultLabel
 				this[_state] = "result"
-				console.log("quiz submitted!", response)
+
+				this.dispatchEvent(new QuizDoneEvent(tabulation))
+				this.onQuizDone(tabulation)
+				this[_donePromiseInternals].resolve(tabulation)
 			}
 			catch (error) {
 				this[_state] = "error"
-				console.error("ERROR!", error)
+
+				this.dispatchEvent(new QuizErrorEvent(error))
+				this.onQuizError(error)
+				this[_donePromiseInternals].reject(error)
 			}
 			this.requestUpdate()
 		},
@@ -130,6 +133,9 @@ export class QuizzlyQuiz extends Component {
 			this[_questionIndex] = 0
 			this[_resultLabel] = ""
 			this.requestUpdate()
+
+			this.dispatchEvent(new QuizStartEvent())
+			this.onQuizStart()
 		}
 	}
 
@@ -191,7 +197,7 @@ export class QuizzlyQuiz extends Component {
 		}
 		else if (this[_state] === "error" || this[_state] === "result") {
 			return wrap(html`
-				<button @click=${this[_actions].reset}>reset</button>
+				${this.once ? null : html`<button @click=${this[_actions].reset}>reset</button>`}
 			`)
 		}
 		else throw new Error(`unknown state "${this[_state]}"`)

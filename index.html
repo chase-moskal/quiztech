@@ -10,11 +10,11 @@
 <body>
 	<main>
 
-		<quizzly-quiz id="coolness-quiz" dimensions="coolness" initially-hidden>
-			<div>
+		<quizzly-quiz id="coolness-quiz" dimensions="coolness" once initially-hidden>
+			<header>
 				<h2>Coolness Quiz</h2>
 				<p>How cool R U?</p>
-			</div>
+			</header>
 			<quizzly-question>
 				<p slot="text">Q1 How happy are you?</p>
 				<quizzly-choice add="coolness:-1">Unhappy</quizzly-choice>
@@ -44,9 +44,9 @@
 		</quizzly-quiz>
 
 		<quizzly-quiz id="personality-quiz" dimensions="calm,cool,collected" initially-hidden>
-			<div>
+			<header>
 				<h2>Personality Type Quiz</h2>
-			</div>
+			</header>
 			<quizzly-question>
 				<p slot="text">Which best describes you now?</p>
 				<quizzly-choice add="calm:-1,cool:-1">Hot and tempered</quizzly-choice>

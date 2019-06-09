@@ -13,10 +13,14 @@ coolQuiz.evaluator = dimensions => (
 
 const quizzes: QuizzlyQuiz[] = Array.from(document.querySelectorAll("quizzly-quiz"))
 
-// for (const quiz of quizzes)
-// 	quiz.done
-// 		.catch(error => console.error(error))
-// 		.then(detail => console.log("QUIZDONE", detail))
+for (const quiz of quizzes)
+	quiz.done
+		.catch(error => console.error(error))
+		.then(detail => console.log("QUIZDONE", detail))
 
 window["quizzes"] = quizzes
 window["coolQuiz"] = coolQuiz
+
+window.addEventListener("quiz-start", () => console.log("= quiz-start"))
+window.addEventListener("quiz-done", () => console.log("= quiz-done"))
+window.addEventListener("quiz-error", () => console.log("= quiz-error"))
