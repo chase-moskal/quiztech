@@ -30,6 +30,10 @@ quizzly-quiz {
 	padding: 1em;
 }
 
+quizzly-quiz[initially-hidden] {
+	display: none;
+}
+
 * + quizzly-quiz {
 	margin-top: 1em;
 }

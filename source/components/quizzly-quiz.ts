@@ -1,73 +1,20 @@
 
 import {TemplateResult} from "lit-element"
 
-import {Dimensions} from "../interfaces.js"
+import {Tabulation, Evaluator, Submitter} from "../interfaces.js"
+
+import {parseDimensions} from "../quiztools/parse-dimensions.js"
+import {parseAddCommand} from "../quiztools/parse-add-command.js"
+import {defaultEvaluator} from "../quiztools/default-evaluator.js"
+import {defaultSubmitter} from "../quiztools/default-submitter.js"
+
+// import {QuizDoneEvent} from "../events/quiz-done-event.js"
+// import {QuizStartEvent} from "../events/quiz-start-event.js"
+// import {QuizErrorEvent} from "../events/quiz-error-event.js"
+
 import {QuizzlyResult} from "./quizzly-result.js"
 import {QuizzlyQuestion} from "./quizzly-question.js"
 import {Component, html, prop} from "../toolbox/component.js"
-
-const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
-
-export interface Tabulation {
-	resultLabel: string
-	dimensions: Dimensions
-}
-
-const parseDimensions = (raw: string): Dimensions => {
-	let obj = {}
-	const names = raw.split(",").map(part => part.trim())
-	for (const name of names) obj[name] = 0
-	return obj
-}
-
-const parseAddCommand = (raw: string) => {
-	const additions = raw.split(",").map(a => a.trim())
-	return additions.map(addition => {
-		const [dimension, rawValue] = addition.split(":")
-		const value = parseFloat(rawValue)
-		return {dimension, value}
-	})
-}
-
-export type Evaluator = (dimensions: Dimensions) => string
-export type Submitter = (tabulation: Tabulation) => Promise<any>
-
-export const defaultEvaluator: Evaluator = (dimensions: Dimensions): string => {
-	let best: string = null
-	let bestValue: number = -Infinity
-	for (const dimension of Object.keys(dimensions)) {
-		const value = dimensions[dimension]
-		if (value > bestValue) {
-			best = dimension
-			bestValue = value
-		}
-	}
-	return best
-}
-
-export const defaultSubmitter: Submitter = async(tabulation) => {
-	await sleep(500)
-}
-
-const eventSettings = {bubbles: true, composed: true}
-
-export class StartEvent extends CustomEvent<{}> {
-	constructor(detail: {} = {}) {
-		super("quiz-start", {...eventSettings, detail})
-	}
-}
-
-export class DoneEvent extends CustomEvent<Tabulation> {
-	constructor(detail: Tabulation) {
-		super("quiz-done", {...eventSettings, detail})
-	}
-}
-
-export class ErrorEvent extends CustomEvent<{error: Error}> {
-	constructor(error: Error) {
-		super("quiz-error", {...eventSettings, detail: {error}})
-	}
-}
 
 /*
 
@@ -86,39 +33,59 @@ QUIZZLY-QUIZ
 
 */
 
+const _state = Symbol()
+const _actions = Symbol()
+const _tabulate = Symbol()
+const _resultLabel = Symbol()
+const _questionIndex = Symbol()
+const _renderActionBar = Symbol()
+const _handleChoiceCheck = Symbol()
+const _getSlottedElements = Symbol()
+
+/**
+ * # QUIZZLY QUIZ
+ */
 export class QuizzlyQuiz extends Component {
 	@prop(String) dimensions: string = ""
 	@prop(Function) evaluator: Evaluator = defaultEvaluator
 	@prop(Function) submitter: Submitter = defaultSubmitter
 
-	private state: string = "question"
-	private questionIndex: number = 0
-	private resultLabel: string = ""
+	private [_state]: string = "question"
+	private [_questionIndex]: number = 0
+	private [_resultLabel]: string = ""
 
 	updated() {
-		const {questions, results} = this.getSlottedElements()
+		const {questions, results} = this[_getSlottedElements]()
 
 		// start by hiding all of the questions and results
 		for (const element of [...questions, ...results]) element.hidden = true
 
 		// display the correct question
 		questions.forEach((question, questionIndex) => {
-			if (this.state === "question" && questionIndex === this.questionIndex)
+			if (this[_state] === "question" && questionIndex === this[_questionIndex])
 				question.hidden = false
 		})
 
 		// display the correct result
 		for (const result of results) {
-			if (this.state === "result" && result.label === this.resultLabel)
+			if (this[_state] === "result" && result.label === this[_resultLabel])
 				result.hidden = false
 		}
 	}
 
 	firstUpdated() {
-		this.actions.reset()
+		this[_actions].reset()
+		this.removeAttribute("initially-hidden")
 	}
 
-	private getSlottedElements() {
+	render() {
+		return html`
+			<slot id="main-slot" @check=${this[_handleChoiceCheck]}></slot>
+			${this[_renderActionBar]()}
+		`
+	}
+
+	private [_getSlottedElements]() {
 		const slot: HTMLSlotElement = this.shadowRoot.querySelector("slot")
 		if (!slot) return {elements: [], questions: [], results: []}
 		const elements = slot.assignedElements()
@@ -132,43 +99,43 @@ export class QuizzlyQuiz extends Component {
 		return {elements, questions, results}
 	}
 
-	private actions = {
+	private [_actions] = {
 		next: () => {
-			this.questionIndex += 1
+			this[_questionIndex] += 1
 			this.requestUpdate()
 		},
 		back: () => {
-			this.questionIndex -= 1
+			this[_questionIndex] -= 1
 			this.requestUpdate()
 		},
 		submit: async() => {
-			this.state = "loading"
+			this[_state] = "loading"
 			try {
-				const tabulation = this.tabulate()
+				const tabulation = this[_tabulate]()
 				const response = await this.submitter(tabulation)
-				this.resultLabel = tabulation.resultLabel
-				this.state = "result"
+				this[_resultLabel] = tabulation.resultLabel
+				this[_state] = "result"
 				console.log("quiz submitted!", response)
 			}
 			catch (error) {
-				this.state = "error"
+				this[_state] = "error"
 				console.error("ERROR!", error)
 			}
 			this.requestUpdate()
 		},
 		reset: () => {
-			const {questions} = this.getSlottedElements()
+			const {questions} = this[_getSlottedElements]()
 			for (const question of questions) question.reset()
-			this.state = "question"
-			this.questionIndex = 0
-			this.resultLabel = ""
+			this[_state] = "question"
+			this[_questionIndex] = 0
+			this[_resultLabel] = ""
 			this.requestUpdate()
 		}
 	}
 
-	private tabulate(): Tabulation {
+	private [_tabulate](): Tabulation {
 		const dimensions = parseDimensions(this.dimensions)
-		const {questions} = this.getSlottedElements()
+		const {questions} = this[_getSlottedElements]()
 		let answered = 0
 
 		for (const question of questions) {
@@ -189,56 +156,49 @@ export class QuizzlyQuiz extends Component {
 		if (answered !== questions.length) throw new Error("cannot tabulate incomplete quiz")
 
 		const resultLabel = this.evaluator(dimensions)
-		this.resultLabel = resultLabel
+		this[_resultLabel] = resultLabel
 		Object.freeze(dimensions)
 
 		return {dimensions, resultLabel}
 	}
 
-	private renderActionBar() {
+	private [_renderActionBar]() {
 		const wrap = (inner: TemplateResult) => html`<div class="actionbar">${inner}</div>`
-		const {questions} = this.getSlottedElements()
+		const {questions} = this[_getSlottedElements]()
 
-		if (this.state === "question") {
+		if (this[_state] === "question") {
 			const getQuestion = (index: number) => {
 				return (index >= 0 && index < questions.length)
 					? questions[index]
 					: null
 			}
-			const question = getQuestion(this.questionIndex)
+			const question = getQuestion(this[_questionIndex])
 			if (!question) return null
 			const choice = question.getCurrentChoice()
-			const lastQuestion = getQuestion(this.questionIndex - 1)
-			const nextQuestion = getQuestion(this.questionIndex + 1)
+			const lastQuestion = getQuestion(this[_questionIndex] - 1)
+			const nextQuestion = getQuestion(this[_questionIndex] + 1)
 			return wrap(html`
 				${lastQuestion
-					? html`<button @click=${this.actions.back}>back</button>`
+					? html`<button @click=${this[_actions].back}>back</button>`
 					: null}
 				${nextQuestion
-					? html`<button ?disabled=${!choice} @click=${this.actions.next}>next</button>`
-					: html`<button ?disabled=${!choice} @click=${this.actions.submit}>submit</button>`}
+					? html`<button ?disabled=${!choice} @click=${this[_actions].next}>next</button>`
+					: html`<button ?disabled=${!choice} @click=${this[_actions].submit}>submit</button>`}
 			`)
 		}
-		else if (this.state === "loading") {
+		else if (this[_state] === "loading") {
 			return null
 		}
-		else if (this.state === "error" || this.state === "result") {
+		else if (this[_state] === "error" || this[_state] === "result") {
 			return wrap(html`
-				<button @click=${this.actions.reset}>reset</button>
+				<button @click=${this[_actions].reset}>reset</button>
 			`)
 		}
-		else throw new Error(`unknown state "${this.state}"`)
+		else throw new Error(`unknown state "${this[_state]}"`)
 	}
 
-	private handleChoiceCheck = () => {
+	private [_handleChoiceCheck] = () => {
 		this.requestUpdate()
-	}
-
-	render() {
-		return html`
-			<slot id="main-slot" @check=${this.handleChoiceCheck}></slot>
-			${this.renderActionBar()}
-		`
 	}
 }
 
