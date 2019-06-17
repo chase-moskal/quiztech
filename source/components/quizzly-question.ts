@@ -6,6 +6,7 @@ export const _getChoices = Symbol()
 export const _handleCheckEvent = Symbol()
 
 export class QuizzlyQuestion extends Component {
+	@prop(String, true) numeral: string = ""
 	@prop(Boolean, true) disabled: boolean = false
 
 	private readonly [_handleCheckEvent] = event => {
@@ -24,6 +25,12 @@ export class QuizzlyQuestion extends Component {
 		return css`
 			:host {
 				display: block;
+			}
+			.textblock {
+				display: flex;
+			}
+			.textblock > .numeral {
+				margin-right: 0.2em;
 			}
 		`
 	}
@@ -50,7 +57,12 @@ export class QuizzlyQuestion extends Component {
 	render() {
 		return html`
 			<div @check=${this[_handleCheckEvent]}>
-				<slot id="textslot" name="text"></slot>
+				<div class="textblock">
+					${this.numeral
+						? html`<div class="numeral">${this.numeral}</div>`
+						: null}
+					<slot id="textslot" name="text"></slot>
+				</div>
 				<slot id="mainslot"></slot>
 			</div>
 		`

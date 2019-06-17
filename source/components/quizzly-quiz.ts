@@ -29,6 +29,7 @@ export const _donePromiseInternals = Symbol()
 export class QuizzlyQuiz extends Component {
 	@prop(String) dimensions: string = ""
 	@prop(Boolean, true) once: boolean = false
+	@prop(Boolean, true) enumerated: boolean = false
 	@prop(Function) evaluator: Evaluator = defaultEvaluator
 	@prop(Function) submitter: Submitter = defaultSubmitter
 
@@ -64,6 +65,8 @@ export class QuizzlyQuiz extends Component {
 
 		// display the correct question
 		questions.forEach((question, questionIndex) => {
+			if (this.enumerated)
+				question.numeral = `${questionIndex + 1}. `
 			if (this[_state] === "question" && questionIndex === this[_questionIndex])
 				question.hidden = false
 		})
@@ -78,6 +81,7 @@ export class QuizzlyQuiz extends Component {
 	firstUpdated() {
 		this[_actions].reset()
 		this.removeAttribute("initially-hidden")
+		this.shadowRoot.addEventListener("slotchange", () => this.requestUpdate())
 	}
 
 	render() {

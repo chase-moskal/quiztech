@@ -35,18 +35,15 @@ stylin'
 */
 
 quizzly-quiz {
-	padding: 1em;
 	border: 1px solid #eee;
 }
 
-quizzly-question {
-	padding: 1em;
+quizzly-quiz,
+quizzly-question,
+quizzly-result {
+	padding: 0.67em;
 }
 
 quizzly-question > p {
 	margin-bottom: 0.32em;
-}
-
-quizzly-result {
-	padding: 1em;
 }
