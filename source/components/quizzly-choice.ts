@@ -14,6 +14,9 @@ export class QuizzlyChoice extends Component {
 				display: inline-block;
 				vertical-align: middle;
 			}
+			:host([hidden]) {
+				display: none;
+			}
 			*:focus {
 				outline: var(--focus-outline, 2px solid #2ef);
 			}

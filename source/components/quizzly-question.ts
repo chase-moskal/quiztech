@@ -26,6 +26,9 @@ export class QuizzlyQuestion extends Component {
 			:host {
 				display: block;
 			}
+			:host([hidden]) {
+				display: none;
+			}
 			.textblock {
 				display: flex;
 			}

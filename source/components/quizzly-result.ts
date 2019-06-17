@@ -9,6 +9,9 @@ export class QuizzlyResult extends Component {
 			:host {
 				display: block;
 			}
+			:host([hidden]) {
+				display: none;
+			}
 		`
 	}
 
