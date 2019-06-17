@@ -14,7 +14,7 @@ import {QuizErrorEvent} from "../events/quiz-error-event.js"
 
 import {QuizzlyResult} from "./quizzly-result.js"
 import {QuizzlyQuestion} from "./quizzly-question.js"
-import {Component, html, prop} from "../toolbox/component.js"
+import {Component, html, css, prop} from "../toolbox/component.js"
 
 export const _state = Symbol()
 export const _actions = Symbol()
@@ -44,6 +44,17 @@ export class QuizzlyQuiz extends Component {
 	done = new Promise((resolve, reject) => {
 		this[_donePromiseInternals] = {resolve, reject}
 	})
+
+	static get styles() {
+		return css`
+			*:focus {
+				outline: var(--focus-outline, 2px solid #2ef);
+			}
+			.actionbar {
+				text-align: var(--quizzly-quiz-actionbar-align, right);
+			}
+		`
+	}
 
 	updated() {
 		const {questions, results} = this[_getSlottedElements]()
@@ -185,11 +196,11 @@ export class QuizzlyQuiz extends Component {
 			const nextQuestion = getQuestion(this[_questionIndex] + 1)
 			return wrap(html`
 				${lastQuestion
-					? html`<button @click=${this[_actions].back}>back</button>`
+					? html`<button @click=${this[_actions].back}>Back</button>`
 					: null}
 				${nextQuestion
-					? html`<button ?disabled=${!choice} @click=${this[_actions].next}>next</button>`
-					: html`<button ?disabled=${!choice} @click=${this[_actions].submit}>submit</button>`}
+					? html`<button ?disabled=${!choice} @click=${this[_actions].next}>Next</button>`
+					: html`<button ?disabled=${!choice} @click=${this[_actions].submit}>Submit</button>`}
 			`)
 		}
 		else if (this[_state] === "loading") {
@@ -197,7 +208,7 @@ export class QuizzlyQuiz extends Component {
 		}
 		else if (this[_state] === "error" || this[_state] === "result") {
 			return wrap(html`
-				${this.once ? null : html`<button @click=${this[_actions].reset}>reset</button>`}
+				${this.once ? null : html`<button @click=${this[_actions].reset}>Reset</button>`}
 			`)
 		}
 		else throw new Error(`unknown state "${this[_state]}"`)

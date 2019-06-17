@@ -1,2 +1,16 @@
 
+/*
+
+recommended quizzly styles
+
+*/
+
 @charset "utf-8";
+
+quizzly-quiz {
+	display: block;
+}
+
+quizzly-quiz[initially-hidden] {
+	display: none;
+}

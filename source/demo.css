@@ -3,7 +3,9 @@
 @import url("https://unpkg.com/normalize.css@8.0.1/normalize.css");
 
 * {
-	--focus-outline: 3px solid #2ef;
+	margin: 0;
+	padding: 0;
+	--focus-outline: 2px solid #2ef;
 }
 
 *:focus {
@@ -24,30 +26,27 @@ main {
 	margin: auto;
 }
 
+main > * + * {
+	margin-top: 1em;
+}
+
+/*
+stylin'
+*/
+
 quizzly-quiz {
-	display: block;
-	background: #eee;
 	padding: 1em;
-}
-
-quizzly-quiz[initially-hidden] {
-	display: none;
-}
-
-* + quizzly-quiz {
-	margin-top: 1em;
-}
-
-quizzly-quiz p {
-	margin: 0;
-}
-
-quizzly-question, quizzly-result {
-	display: block;
-	margin-top: 1em;
+	border: 1px solid #eee;
 }
 
 quizzly-question {
-	padding: 0.5em;
-	border: 1px solid lightgrey;
+	padding: 1em;
+}
+
+quizzly-question > p {
+	margin-bottom: 0.32em;
+}
+
+quizzly-result {
+	padding: 1em;
 }

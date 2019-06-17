@@ -8,10 +8,6 @@ export const _handleCheckEvent = Symbol()
 export class QuizzlyQuestion extends Component {
 	@prop(Boolean, true) disabled: boolean = false
 
-	static get styles() {
-		return css``
-	}
-
 	private readonly [_handleCheckEvent] = event => {
 		const {target, detail} = event
 		this.check(target)
@@ -22,6 +18,14 @@ export class QuizzlyQuestion extends Component {
 		if (!mainSlot) return []
 		const choices = <QuizzlyChoice[]>mainSlot.assignedElements()
 		return choices
+	}
+
+	static get styles() {
+		return css`
+			:host {
+				display: block;
+			}
+		`
 	}
 
 	updated() {
